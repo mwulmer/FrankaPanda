@@ -4,6 +4,9 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 // #include <thread>
 // #include <signal.h>
 
@@ -25,6 +28,7 @@ std::string JOINT_VELOCITIES_KEY;
 std::string JOINT_TORQUES_SENSED_KEY;
 std::string MASSMATRIX_KEY;
 std::string CORIOLIS_KEY;
+std::string SENSED_CONTACT_KEY;
 std::string ROBOT_GRAVITY_KEY;
 
 // safety
@@ -52,6 +56,7 @@ std::array<double, 7> q_array{};
 std::array<double, 7> dq_array{};
 std::array<double, 7> tau_sensed_array{};
 std::array<double, 7> gravity_vector{};
+std::array<double, 7> contact_vector{};
 std::array<double, 7> coriolis{};
 std::array<double, 49> M_array{}; 
 std::vector<std::array<double, 7>> sensor_feedback;
@@ -88,6 +93,7 @@ int main(int argc, char** argv) {
     JOINT_TORQUES_SENSED_KEY = "sai2::FrankaPanda::Clyde::sensors::torques";
     MASSMATRIX_KEY = "sai2::FrankaPanda::Clyde::sensors::model::massmatrix";
     CORIOLIS_KEY = "sai2::FrankaPanda::Clyde::sensors::model::coriolis";
+    SENSED_CONTACT_KEY = "sai2::FrankaPanda::Clyde::sensors::model::contact";
     ROBOT_GRAVITY_KEY = "sai2::FrankaPanda::Clyde::sensors::model::robot_gravity";    
   }
   else if(robot_ip == "172.16.0.11")
@@ -98,6 +104,7 @@ int main(int argc, char** argv) {
     JOINT_TORQUES_SENSED_KEY = "sai2::FrankaPanda::Bonnie::sensors::torques";
     MASSMATRIX_KEY = "sai2::FrankaPanda::Bonnie::sensors::model::massmatrix";
     CORIOLIS_KEY = "sai2::FrankaPanda::Bonnie::sensors::model::coriolis";
+    SENSED_CONTACT_KEY = "sai2::FrankaPanda::Bonnie::sensors::model::contact";
     ROBOT_GRAVITY_KEY = "sai2::FrankaPanda::Bonnie::sensors::model::robot_gravity";       
   }
   else
@@ -108,6 +115,7 @@ int main(int argc, char** argv) {
     JOINT_TORQUES_SENSED_KEY = "sai2::FrankaPanda::sensors::torques";
     MASSMATRIX_KEY = "sai2::FrankaPanda::sensors::model::massmatrix";
     CORIOLIS_KEY = "sai2::FrankaPanda::sensors::model::coriolis";
+    SENSED_CONTACT_KEY = "sai2::FrankaPanda::sensors::model::contact";
     ROBOT_GRAVITY_KEY = "sai2::FrankaPanda::sensors::model::robot_gravity";        
   }
 
@@ -153,12 +161,14 @@ int main(int argc, char** argv) {
   key_names.push_back(JOINT_TORQUES_SENSED_KEY);
   key_names.push_back(ROBOT_GRAVITY_KEY);
   key_names.push_back(CORIOLIS_KEY);
+  key_names.push_back(SENSED_CONTACT_KEY);
 
   sensor_feedback.push_back(q_array);
   sensor_feedback.push_back(dq_array);
   sensor_feedback.push_back(tau_sensed_array);
   sensor_feedback.push_back(gravity_vector);
   sensor_feedback.push_back(coriolis);
+  sensor_feedback.push_back(contact_vector);
 
   std::clock_t start;
   double duration;
@@ -187,6 +197,7 @@ int main(int argc, char** argv) {
       sensor_feedback[2] = robot_state.tau_J;
       sensor_feedback[3] = model.gravity(robot_state);
       sensor_feedback[4] = model.coriolis(robot_state);
+      sensor_feedback[5] = robot_state.joint_contact;
 
       M_array = model.mass(robot_state);
       Eigen::Map<const Eigen::Matrix<double, 7, 7> > MassMatrix(M_array.data());
