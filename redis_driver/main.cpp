@@ -41,8 +41,8 @@ const std::array<double, 7> joint_position_min = {-2.7, -1.6, -2.7, -3.0, -2.7, 
 const std::array<double, 7> joint_velocity_limits = {2.0, 2.0, 2.0, 2.0, 2.5, 2.5, 2.5};
 const std::array<double, 7> joint_torques_limits = {85, 85, 85, 85, 10, 10, 10};
 
-const Eigen::Vector3d monitoring_point_ee_frame = Eigen::Vector3d(0.0, 0.0, 0.15);
-const double safety_plane_z_coordinate = 0.28;
+const Eigen::Vector3d monitoring_point_ee_frame = Eigen::Vector3d(0.0, 0.0, 0.00);
+const double safety_plane_z_coordinate = 0.07;
 const double safety_cylinder_radius = 0.28;
 const double safety_cylinder_height = 0.53;
 
@@ -192,12 +192,42 @@ int main(int argc, char** argv) {
                                       franka::Duration period) -> franka::Torques 
     {
       // start = std::clock();
+
       sensor_feedback[0] = robot_state.q;
       sensor_feedback[1] = robot_state.dq;
       sensor_feedback[2] = robot_state.tau_J;
       sensor_feedback[3] = model.gravity(robot_state);
       sensor_feedback[4] = model.coriolis(robot_state);
-      sensor_feedback[5] = robot_state.joint_contact;
+      std::array<double, 7> contact= std::array<double, 7>();
+      for(int i=0;i<7;i++)
+      {
+        if (robot_state.tau_ext_hat_filtered[i] > 3.0)
+        {
+            contact[i]=1.0;
+        }
+        else
+        {
+          contact[i] = 0.0;
+        }
+        
+        
+      }
+
+      sensor_feedback[5] = contact;//robot_state.joint_contact;
+
+      // if (counter%1000==0)
+      // {
+      //   std::cout<<"collision joint ";
+      //     for(int i=0;i<7;i++)
+      // {
+      //   //std::cout<<"contact joint "<<i<<" ="<<robot_state.joint_contact[i]<<std::endl;
+      //   //std::cout<<"collision joint "<<i<<" ="<<robot_state.joint_collision[i]<<std::endl;
+      //   std::cout<<" || "<<i+1<<" = "<<contact[i];
+      // }
+      // std::cout<<std::endl;
+
+      // }
+      
 
       M_array = model.mass(robot_state);
       Eigen::Map<const Eigen::Matrix<double, 7, 7> > MassMatrix(M_array.data());
